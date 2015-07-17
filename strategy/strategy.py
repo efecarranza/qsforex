@@ -1,18 +1,11 @@
+from __future__ import print_function
 import copy
+import time
 
 from qsforex.event.event import SignalEvent
 
 
 class TestStrategy(object):
-    """
-    A testing strategy that alternates between buying and selling
-    a currency pair on every 5th tick. This has the effect of
-    continuously "crossing the spread" and so will be loss-making
-    strategy. 
-
-    It is used to test that the backtester/live trading system is
-    behaving as expected.
-    """
     def __init__(self, pairs, events):
         self.pairs = pairs
         self.events = events
@@ -34,28 +27,13 @@ class TestStrategy(object):
 
 
 class MovingAverageCrossStrategy(object):
-    """
-    A basic Moving Average Crossover strategy that generates
-    two simple moving averages (SMA), with default windows
-    of 500 ticks for the short SMA and 2,000 ticks for the
-    long SMA.
-
-    The strategy is "long only" in the sense it will only
-    open a long position once the short SMA exceeds the long
-    SMA. It will close the position (by taking a corresponding
-    sell order) when the long SMA recrosses the short SMA.
-
-    The strategy uses a rolling SMA calculation in order to
-    increase efficiency by eliminating the need to call two
-    full moving average calculations on each tick.
-    """
     def __init__(
-        self, pairs, events, 
+        self, pairs, events,
         short_window=500, long_window=2000
     ):
         self.pairs = pairs
         self.pairs_dict = self.create_pairs_dict()
-        self.events = events      
+        self.events = events
         self.short_window = short_window
         self.long_window = long_window
 
@@ -100,3 +78,45 @@ class MovingAverageCrossStrategy(object):
                     self.events.put(signal)
                     pd["invested"] = False
             pd["ticks"] += 1
+
+class DailySupportResistanceTrading(object):
+    def __init__(self, pairs, events):
+        self.pairs = pairs
+        self.pairs_dicdt = self.create_pairs_dict()
+        self.events = events
+        self.tick_data = self.create_tick_data_dict()
+
+    def create_tick_data_dict(self):
+        today = time.strftime("%Y-%m-%d")
+        tick_data = { today: { '0': { 'bid': [], 'ask': [] }}}
+        return tick_data
+
+    def create_pairs_dict(self):
+        attr_dict = {
+            "ticks": 0,
+            "invested": False,
+        }
+        pairs_dict = {}
+        for p in self.pairs:
+            pairs_dict[p] = copy.deepcopy(attr_dict)
+        return pairs_dict
+
+    def group_tick_data(self, event):
+        if event.type == 'TICK':
+            oanda_time = event.time.split('T')
+            day = str(oanda_time[0])
+            h_m_s = oanda_time[1].split(':')
+            hour = str(h_m_s[0])
+            bid = str(event.bid)
+            ask = str(event.ask)
+            if day in self.tick_data:
+                if hour in self.tick_data[day]:
+                    self.tick_data[day][hour]["bid"].append(bid)
+                    self.tick_data[day][hour]["ask"].append(ask)
+                else:
+                    self.tick_data[day][hour] = { "bid": [], "ask": [] }
+                    self.tick_data[day][hour]["bid"].append(bid)
+                    self.tick_data[day][hour]["ask"].append(ask)
+
+        print("This is your tick data so far: %s" % self.tick_data)
+        return
