@@ -1,6 +1,7 @@
 from __future__ import print_function
 import copy
 import time
+from datetime import date, timedelta
 
 from qsforex.event.event import SignalEvent
 
@@ -82,7 +83,7 @@ class MovingAverageCrossStrategy(object):
 class DailySupportResistanceTrading(object):
     def __init__(self, pairs, events):
         self.pairs = pairs
-        self.pairs_dicdt = self.create_pairs_dict()
+        self.pairs_dict = self.create_pairs_dict()
         self.events = events
         self.tick_data = self.create_tick_data_dict()
 
@@ -101,6 +102,31 @@ class DailySupportResistanceTrading(object):
             pairs_dict[p] = copy.deepcopy(attr_dict)
         return pairs_dict
 
+    def get_support_resistance(tick_data):
+            high = None
+            low = None
+            for hour in tick_data:
+                high_value = max(hour["ask"])
+                low_value = min(hour["bid"])
+                if high == None:
+                    high = high_value
+                elif high < high_value:
+                    high = high_value
+                if low == None:
+                    low = low_value
+                elif low_value < low:
+                    low = low_value
+            return (low, high)
+
+    def get_previous_day_high_low(self):
+        support = 0
+        resistance = 0
+        d = date.today() - timedelta(days = 0)
+        if d.day in self.tick_data:
+            support, resistance = self.get_support_resistance(self.tick_data[day])
+        return (support, resistance)
+
+
     def group_tick_data(self, event):
         if event.type == 'TICK':
             oanda_time = event.time.split('T')
@@ -117,6 +143,14 @@ class DailySupportResistanceTrading(object):
                     self.tick_data[day][hour] = { "bid": [], "ask": [] }
                     self.tick_data[day][hour]["bid"].append(bid)
                     self.tick_data[day][hour]["ask"].append(ask)
-
-        print("This is your tick data so far: %s" % self.tick_data)
+            else:
+                self.tick_data[day] = { hour: { "bid": [], "ask": [] }}
+                self.tick_data[day][hour]["bid"].append(bid)
+                self.tick_data[day][hour]["ask"].append(ask)
+            previous_high, previous_low = self.get_previous_day_high_low()
+            print("High: %s, Low: %s" % (previous_high, previous_low))
         return
+
+
+
+
