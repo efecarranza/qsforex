@@ -102,27 +102,35 @@ class DailySupportResistanceTrading(object):
             pairs_dict[p] = copy.deepcopy(attr_dict)
         return pairs_dict
 
-    def get_support_resistance(tick_data):
-            high = None
-            low = None
-            for hour in tick_data:
-                high_value = max(hour["ask"])
-                low_value = min(hour["bid"])
-                if high == None:
-                    high = high_value
-                elif high < high_value:
-                    high = high_value
-                if low == None:
-                    low = low_value
-                elif low_value < low:
-                    low = low_value
-            return (low, high)
+    def get_support_resistance(self, tick_data):
+        high = None
+        low = None
+        for hour in tick_data:
+            for array in tick_data[hour]:
+                if not tick_data[hour][array]:
+                    continue
+                else:
+                    if array == "ask":
+                        high_value = max(tick_data[hour][array])
+                        print(high_value)
+                        if high == None:
+                            high = high_value
+                        elif high_value > high:
+                            high = high_value
+                    elif array == "bid":
+                        low_value = min(tick_data[hour][array])
+                        if low == None:
+                            low = low_value
+                        elif low_value < low:
+                            low = low_value
+        return (low, high)
 
     def get_previous_day_high_low(self):
         support = 0
         resistance = 0
         d = date.today() - timedelta(days = 0)
-        if d.day in self.tick_data:
+        day = d.strftime('%Y-%m-%d')
+        if day in self.tick_data:
             support, resistance = self.get_support_resistance(self.tick_data[day])
         return (support, resistance)
 
@@ -147,7 +155,7 @@ class DailySupportResistanceTrading(object):
                 self.tick_data[day] = { hour: { "bid": [], "ask": [] }}
                 self.tick_data[day][hour]["bid"].append(bid)
                 self.tick_data[day][hour]["ask"].append(ask)
-            previous_high, previous_low = self.get_previous_day_high_low()
+            previous_low, previous_high = self.get_previous_day_high_low()
             print("High: %s, Low: %s" % (previous_high, previous_low))
         return
 
