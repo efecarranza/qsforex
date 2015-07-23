@@ -34,7 +34,6 @@ class SimulatedExecution(object):
     """
     Provides a simulated execution handling environment. This class
     actually does nothing - it simply receives an order to execute.
-
     Instead, the Portfolio object actually provides fill handling.
     This will be modified in later versions.
     """
@@ -66,10 +65,9 @@ class OANDAExecutionHandler(ExecutionHandler):
             "side" : event.side
         })
         self.conn.request(
-            "POST", 
-            "/v1/accounts/%s/orders" % str(self.account_id), 
+            "POST",
+            "/v1/accounts/%s/orders" % str(self.account_id),
             params, headers
         )
         response = self.conn.getresponse().read().decode("utf-8").replace("\n","").replace("\t","")
         self.logger.debug(response)
-        

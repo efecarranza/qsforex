@@ -12,7 +12,7 @@ class TickEvent(Event):
 
     def __str__(self):
         return "Type: %s, Instrument: %s, Time: %s, Bid: %s, Ask: %s" % (
-            str(self.type), str(self.instrument), 
+            str(self.type), str(self.instrument),
             str(self.time), str(self.bid), str(self.ask)
         )
 
@@ -30,7 +30,7 @@ class SignalEvent(Event):
 
     def __str__(self):
         return "Type: %s, Instrument: %s, Order Type: %s, Side: %s" % (
-            str(self.type), str(self.instrument), 
+            str(self.type), str(self.instrument),
             str(self.order_type), str(self.side)
         )
 

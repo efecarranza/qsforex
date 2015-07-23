@@ -3,7 +3,7 @@ from decimal import Decimal, getcontext, ROUND_HALF_DOWN
 
 class Position(object):
     def __init__(
-        self, home_currency, position_type, 
+        self, home_currency, position_type,
         currency_pair, units, ticker
     ):
         self.home_currency = home_currency  # Account denomination (e.g. GBP)
@@ -24,7 +24,7 @@ class Position(object):
         ticker_cur = self.ticker.prices[self.currency_pair]
         if self.position_type == "long":
             self.avg_price = Decimal(str(ticker_cur["ask"]))
-            self.cur_price = Decimal(str(ticker_cur["bid"]))    
+            self.cur_price = Decimal(str(ticker_cur["bid"]))
         else:
             self.avg_price = Decimal(str(ticker_cur["bid"]))
             self.cur_price = Decimal(str(ticker_cur["ask"]))
@@ -50,7 +50,7 @@ class Position(object):
         profit = pips * qh_close * self.units
         return profit.quantize(
             Decimal("0.00001"), ROUND_HALF_DOWN
-        )   
+        )
 
     def calculate_profit_perc(self):
         return (self.profit_base / self.units * Decimal("100.00")).quantize(

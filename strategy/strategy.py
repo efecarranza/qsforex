@@ -5,6 +5,15 @@ from datetime import date, timedelta
 
 from qsforex.event.event import SignalEvent
 
+# Define trading times that are ideal for strategy. All times are GMT.
+
+ASIA_START_TIME = '0'
+ASIA_END_TIME = '5'
+LONDON_KILLZONE_START = '6'
+LONDON_KILLZONE_END = '10'
+NY_KILLZONE_START = '12'
+NY_KILLZONE_END = '15'
+GET_OUT_OF_POSITION_HOUR = '18'
 
 class TestStrategy(object):
     def __init__(self, pairs, events):
@@ -102,6 +111,33 @@ class DailySupportResistanceTrading(object):
             pairs_dict[p] = copy.deepcopy(attr_dict)
         return pairs_dict
 
+    def get_high_low_in_range(self, tick_data):
+        high = None
+        low = None
+        highs_lows = []
+        for hour in tick_data:
+            if not tick_data[hour]["ask"] or not tick_data[hour]["bid"]:
+                continue
+            elif hour >= ASIA_START_TIME and hour < ASIA_END_TIME:
+                high_value = max(tick_data[hour]["ask"])
+                low_value = min(tick_data[hour]["ask"])
+                highs_lows.append(high_value)
+                highs_lows.append(low_value)
+        asia_high = max(highs_lows)
+        asia_low = min(highs_lows)
+        return (asia_high, asia_low)
+
+    def get_asia_range(self, tick_data):
+        d = date.today()
+        day = d.strftime('%Y-%m-%d')
+        if day in self.tick_data:
+            high, low = self.get_high_low_in_range(tick_data[day])
+        print("Asia High: %s, Asia Low: %s" % (high, low))
+        return (high, low)
+
+    def generate_trade_signal(self, event):
+        return
+
     def get_support_resistance(self, tick_data):
         high = None
         low = None
@@ -112,7 +148,6 @@ class DailySupportResistanceTrading(object):
                 else:
                     if array == "ask":
                         high_value = max(tick_data[hour][array])
-                        print(high_value)
                         if high == None:
                             high = high_value
                         elif high_value > high:
@@ -156,6 +191,7 @@ class DailySupportResistanceTrading(object):
                 self.tick_data[day][hour]["bid"].append(bid)
                 self.tick_data[day][hour]["ask"].append(ask)
             previous_low, previous_high = self.get_previous_day_high_low()
+            asia_high, asia_low = self.get_asia_range(self.tick_data)
             print("High: %s, Low: %s" % (previous_high, previous_low))
         return
 

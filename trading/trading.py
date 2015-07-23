@@ -88,9 +88,7 @@ if __name__ == "__main__":
     # Create two separate threads: One for the trading loop
     # and another for the market price streaming class
     trade_thread = threading.Thread(
-        target=trade, args=(
-            events, strategy, portfolio, execution, heartbeat
-        )
+        target=trade, args=(events, strategy, portfolio, execution, heartbeat)
     )
     price_thread = threading.Thread(target=prices.stream_to_queue, args=[])
 
