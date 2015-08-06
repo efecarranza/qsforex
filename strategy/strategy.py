@@ -136,13 +136,40 @@ class DailySupportResistanceTrading(object):
         day = d.strftime('%Y-%m-%d')
         if day in self.tick_data:
             high, low = self.get_high_low_in_range(tick_data[day])
-        print("Asia High: %s, Asia Low: %s" % (high, low))
         return (high, low)
 
+    def inLondonKillZone(current_hour):
+        if int(current_hour) > LONDON_KILLZONE_START and int(current_hour) < LONDON_KILLZONE_END:
+            return True
+        return False
+
+    def inNYKillZone(current_hour):
+        if int(current_hour) > NY_KILLZONE_START and int(current_hour) < NY_KILLZONE_END:
+            return True
+        return False
+
     def generate_trade_signal(self, event):
-        if event.type == 'TICK':
-            nothing = None
-        return nothing
+        pair = event.instrument
+        price = event.bid
+        asia_high, asia_low = self.get_asia_range(self.tick_data)
+        previous_low, previous_high = self.get_previous_day_high_low()
+        current_hour = time.gmtime()
+        if not asia_high == None and not asia_low == None:
+            if inLondonKillZone(current_hour):
+                if price > asia_high and price < previous_high:
+                    signal = SignalEvent(pair, "market", "sell", event.time)
+                    self.events.put(signal)
+                elif price < asia_low and price < previous_high:
+                    signal = SignalEvent(pair, "market", "buy", event.time)
+                    self.events.put(signal)
+            elif inNYKillZone(current_hour):
+                if price > asia_high and price < previous_high:
+                    signal = SignalEvent(pair, "market", "sell", event.time)
+                    self.events.put(signal)
+                elif: price < asia_low and price > previous_low:
+                    signal = SignalEvent(pair, "market", "buy", event.time)
+                    self.events.put(signal)
+        return
 
     def get_support_resistance(self, tick_data):
         high = None
@@ -196,9 +223,7 @@ class DailySupportResistanceTrading(object):
                 self.tick_data[day] = { hour: { "bid": [], "ask": [] }}
                 self.tick_data[day][hour]["bid"].append(bid)
                 self.tick_data[day][hour]["ask"].append(ask)
-            previous_low, previous_high = self.get_previous_day_high_low()
-            asia_high, asia_low = self.get_asia_range(self.tick_data)
-            print("High: %s, Low: %s" % (previous_high, previous_low))
+            self.generate_trade_signal(event)
         return
 
 
