@@ -7,13 +7,13 @@ from qsforex.event.event import SignalEvent
 
 # Define trading times that are ideal for strategy. All times are GMT.
 
-ASIA_START_TIME = '0'
-ASIA_END_TIME = '5'
-LONDON_KILLZONE_START = '6'
-LONDON_KILLZONE_END = '10'
-NY_KILLZONE_START = '12'
-NY_KILLZONE_END = '15'
-GET_OUT_OF_POSITION_HOUR = '18'
+ASIA_START_TIME = 0
+ASIA_END_TIME = 5
+LONDON_KILLZONE_START = 6
+LONDON_KILLZONE_END = 10
+NY_KILLZONE_START = 12
+NY_KILLZONE_END = 15
+GET_OUT_OF_POSITION_HOUR = 18
 
 class TestStrategy(object):
     def __init__(self, pairs, events):
@@ -118,13 +118,17 @@ class DailySupportResistanceTrading(object):
         for hour in tick_data:
             if not tick_data[hour]["ask"] or not tick_data[hour]["bid"]:
                 continue
-            elif hour >= ASIA_START_TIME and hour < ASIA_END_TIME:
+            elif ((int(hour) >= ASIA_START_TIME) and (int(hour) < ASIA_END_TIME)):
                 high_value = max(tick_data[hour]["ask"])
                 low_value = min(tick_data[hour]["ask"])
                 highs_lows.append(high_value)
                 highs_lows.append(low_value)
-        asia_high = max(highs_lows)
-        asia_low = min(highs_lows)
+        if highs_lows:
+            asia_high = max(highs_lows)
+            asia_low = min(highs_lows)
+        else:
+            asia_high = None
+            asia_low = None
         return (asia_high, asia_low)
 
     def get_asia_range(self, tick_data):
@@ -136,7 +140,9 @@ class DailySupportResistanceTrading(object):
         return (high, low)
 
     def generate_trade_signal(self, event):
-        return
+        if event.type == 'TICK':
+            nothing = None
+        return nothing
 
     def get_support_resistance(self, tick_data):
         high = None
