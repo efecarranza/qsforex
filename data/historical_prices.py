@@ -22,7 +22,7 @@ class PriceHandler(object):
         self.pair = pair
 
     def start_engine(self):
-        engine = create_engine('sqlite:///eurusd.sqlite')
+        engine = create_engine('sqlite:///../data/eurusd.sqlite')
         connection = engine.connect()
         short_ema_query = connection.execute("SELECT * FROM eurusd ORDER BY Date DESC LIMIT 9;")
         long_ema_query = connection.execute("SELECT * FROM eurusd ORDER BY Date DESC LIMIT 18;")
@@ -32,16 +32,19 @@ class PriceHandler(object):
             short_ema_array.append(row[1])
         for row in long_ema_query:
             long_ema_array.append(row[1])
-        self.calculate_initial_short_ema(short_ema_array)
-        self.calculate_initial_long_ema(long_ema_array)
+        short_ema = self.calculate_initial_short_ema(short_ema_array)
+        long_ema = self.calculate_initial_long_ema(long_ema_array)
+        return (short_ema, long_ema)
 
     def calculate_initial_short_ema(self, short_ema_array):
         ema_periods = 9
         sma = sum(short_ema_array) / ema_periods
         mutiplier = (2 / (ema_periods + 1))
         ema = (short_ema_array[0] - sma) * mutiplier + sma
-        ema = Decimal(str(ema)).quantize(Decimal("0.00001"))
-        print(ema)
+        ema_string = "{:.5f}".format(ema)
+        print(ema_string)
+        ema = Decimal(ema_string)
+        print("short ema: %s" % ema)
         return ema
 
     def calculate_initial_long_ema(self, long_ema_array):
@@ -49,10 +52,10 @@ class PriceHandler(object):
         sma = sum(long_ema_array) / ema_periods
         mutiplier = (2 / (ema_periods + 1))
         ema = (long_ema_array[0] - sma) * mutiplier + sma
-        ema = Decimal(str(ema)).quantize(Decimal("0.00001"))
-        print(ema)
+        ema_string = "{:.5f}".format(ema)
+        ema = Decimal(ema_string)
+        print("long ema %s" % ema)
         return ema
-
 
 connection = PriceHandler('eurusd')
 connection.start_engine()

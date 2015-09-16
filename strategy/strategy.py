@@ -4,6 +4,7 @@ import time
 from datetime import date, timedelta
 
 from qsforex.event.event import SignalEvent
+from qsforex.data.historical_prices import PriceHandler
 
 # Define trading times that are ideal for strategy. All times are GMT.
 
@@ -95,6 +96,21 @@ class DailySupportResistanceTrading(object):
         self.pairs_dict = self.create_pairs_dict()
         self.events = events
         self.tick_data = self.create_tick_data_dict()
+        self.short_ema, self.long_ema = self.get_initial_emas()
+
+
+    def get_initial_emas(self):
+        connection = PriceHandler('eurusd')
+        short_ema, long_ema = connection.start_engine()
+        return (short_ema, long_ema)
+
+    def get_current_market_profile(self, short_ema, long_ema):
+        if short_ema > long_ema:
+            return "buy"
+        elif long_ema > short_ema:
+            return "sell"
+        else:
+            return "range"
 
     def create_tick_data_dict(self):
         today = time.strftime("%Y-%m-%d")
@@ -154,22 +170,28 @@ class DailySupportResistanceTrading(object):
         asia_high, asia_low = self.get_asia_range(self.tick_data)
         previous_low, previous_high = self.get_previous_day_high_low()
         current_hour = time.gmtime()
-        if not asia_high == None and not asia_low == None:
-            if inLondonKillZone(current_hour):
-                if price > asia_high and price < previous_high:
-                    signal = SignalEvent(pair, "market", "sell", event.time)
-                    self.events.put(signal)
-                elif price < asia_low and price < previous_high:
-                    signal = SignalEvent(pair, "market", "buy", event.time)
-                    self.events.put(signal)
-            elif inNYKillZone(current_hour):
-                if price > asia_high and price < previous_high:
-                    signal = SignalEvent(pair, "market", "sell", event.time)
-                    self.events.put(signal)
-                elif: price < asia_low and price > previous_low:
-                    signal = SignalEvent(pair, "market", "buy", event.time)
-                    self.events.put(signal)
-        return
+        current_market_profile = self.get_current_market_profile(self.short_ema, self.long_ema)
+        if current_market_profile == "buy":
+            if not asia_high == None and not asia_low == None:
+                if inLondonKillZone(current_hour):
+                    if price < asia_low and price < previous_high:
+                        signal = SignalEvent(pair, "market", "buy", event.time)
+                        self.events.put(signal)
+                elif inNYKillZone(current_hour):
+                    if price < asia_low and price > previous_low:
+                        signal = SignalEvent(pair, "market", "buy", event.time)
+                        self.events.put(signal)
+        elif current_market_profile == "sell":
+            if not asia_high == None and not asia_low == None:
+                if inLondonKillZone(current_hour):
+                    if price > asia_high and price < previous_high:
+                        signal = SignalEvent(pair, "market", "sell", event.time)
+                        self.events.put(signal)
+
+                elif inNYKillZone(current_hour):
+                    if price > asia_high and price < previous_high:
+                        signal = SignalEvent(pair, "market", "sell", event.time)
+                        self.events.put(signal)
 
     def get_support_resistance(self, tick_data):
         high = None
